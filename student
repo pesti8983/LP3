@@ -1,0 +1,64 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+/**
+ * @title StudentData
+ * @notice Stores student records using a struct and a dynamic array,
+ *         and demonstrates the fallback / receive functions.
+ */
+contract StudentData {
+    // ---------- Structure ----------
+    struct Student {
+        uint256 rollNo;
+        string name;
+        uint8 age;
+        string course;
+    }
+
+    // ---------- Array of structures ----------
+    Student[] private students;
+
+    event StudentAdded(uint256 indexed index, uint256 rollNo, string name);
+    event FallbackCalled(address indexed sender, uint256 value, bytes data);
+    event Received(address indexed sender, uint256 value);
+
+    /// @notice Add a new student record.
+    function addStudent(
+        uint256 _rollNo,
+        string memory _name,
+        uint8 _age,
+        string memory _course
+    ) public {
+        students.push(Student(_rollNo, _name, _age, _course));
+        emit StudentAdded(students.length - 1, _rollNo, _name);
+    }
+
+    /// @notice Get a student record by array index.
+    function getStudent(uint256 index)
+        public
+        view
+        returns (uint256 rollNo, string memory name, uint8 age, string memory course)
+    {
+        require(index < students.length, "Invalid index");
+        Student storage s = students[index];
+        return (s.rollNo, s.name, s.age, s.course);
+    }
+
+    /// @notice Total number of students stored.
+    function getStudentCount() public view returns (uint256) {
+        return students.length;
+    }
+
+    // ---------- Fallback ----------
+
+    /// @dev Runs when ETH is sent with empty calldata.
+    receive() external payable {
+        emit Received(msg.sender, msg.value);
+    }
+
+    /// @dev Runs when a non-existent function is called (or data is sent
+    ///      that matches no function). Payable so it can also accept ETH.
+    fallback() external payable {
+        emit FallbackCalled(msg.sender, msg.value, msg.data);
+    }
+}
