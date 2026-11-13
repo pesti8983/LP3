@@ -1,0 +1,48 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+/**
+ * @title BankAccount
+ * @notice Simple bank account for customers: deposit, withdraw, show balance.
+ *         Intended for deployment on a test network (e.g. Sepolia) using test ETH.
+ */
+contract BankAccount {
+    // Balance of each customer (in wei)
+    mapping(address => uint256) private balances;
+
+    event Deposited(address indexed customer, uint256 amount, uint256 newBalance);
+    event Withdrawn(address indexed customer, uint256 amount, uint256 newBalance);
+
+    /// @notice Deposit ETH into your account.
+    function deposit() external payable {
+        require(msg.value > 0, "Deposit must be greater than 0");
+
+        balances[msg.sender] += msg.value;
+
+        emit Deposited(msg.sender, msg.value, balances[msg.sender]);
+    }
+
+    /// @notice Withdraw ETH (in wei) from your account.
+    function withdraw(uint256 amount) external {
+        require(amount > 0, "Withdrawal must be greater than 0");
+        require(balances[msg.sender] >= amount, "Insufficient balance");
+
+        // Effects before interaction (prevents reentrancy attacks)
+        balances[msg.sender] -= amount;
+
+        (bool success, ) = payable(msg.sender).call{value: amount}("");
+        require(success, "Transfer failed");
+
+        emit Withdrawn(msg.sender, amount, balances[msg.sender]);
+    }
+
+    /// @notice Show the caller's balance (in wei).
+    function showBalance() external view returns (uint256) {
+        return balances[msg.sender];
+    }
+
+    /// @notice Show the balance of any customer address (in wei).
+    function balanceOf(address customer) external view returns (uint256) {
+        return balances[customer];
+    }
+}
